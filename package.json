@@ -1,0 +1,28 @@
+{
+  "name": "core-cli",
+  "version": "1.0.0",
+  "description": "core-cli ",
+  "main": "index.js",
+  "scripts": {
+  },
+  "bin": {
+    "core-cli": "./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/buichuongvnua/core-cli.git"
+  },
+  "keywords": [
+    "core-cli"
+  ],
+  "author": "chuongbv",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/buichuongvnua/core-cli/issues"
+  },
+  "homepage": "https://github.com/buichuongvnua/core-cli#readme",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "fs-extra": "^11.2.0"
+  }
+}
