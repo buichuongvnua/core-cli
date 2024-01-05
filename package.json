@@ -2,11 +2,9 @@
   "name": "core-cli",
   "version": "1.0.0",
   "description": "core-cli ",
-  "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "bin": {
-    "core-cli": "./index.js"
+    "core-cli": "cli/bin/core-cli.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +21,12 @@
   "homepage": "https://github.com/buichuongvnua/core-cli#readme",
   "dependencies": {
     "commander": "^11.1.0",
-    "fs-extra": "^11.2.0"
+    "fs-extra": "^11.2.0",
+    "inquirer": "^8.2.6",
+    "minimist": "^1.2.8",
+    "validate-npm-package-name": "^5.0.0"
+  },
+  "engines": {
+    "node": "^12.0.0 || >= 14.0.0"
   }
 }
