@@ -4,7 +4,7 @@
   "description": "core-cli ",
   "scripts": {},
   "bin": {
-    "core-cli": "cli/bin/core-cli.js"
+    "core": "cli/bin/core-cli.js"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/buichuongvnua/core-cli#readme",
   "dependencies": {
+    "chalk": "^4.1.2",
     "commander": "^11.1.0",
     "fs-extra": "^11.2.0",
     "inquirer": "^8.2.6",

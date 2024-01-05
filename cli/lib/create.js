@@ -2,6 +2,7 @@ const fs = require("fs-extra");
 const path = require("path");
 const inquirer = require("inquirer");
 const validateProjectName = require("validate-npm-package-name");
+const chalk = require("chalk");
 
 async function create(projectName, options) {
   if (options.proxy) {
@@ -54,10 +55,10 @@ async function create(projectName, options) {
   }
   const questions = [
     {
-      type: "list", 
+      type: "list",
       name: "framework",
       message: "Select a framework?",
-      choices: ["NodeJS", "React CMS"], 
+      choices: ["NodeJS", "React CMS"],
     },
   ];
   const template = {
@@ -65,10 +66,24 @@ async function create(projectName, options) {
     "React CMS": "create-cli/template-react-cms",
   };
   const { framework } = await inquirer.prompt(questions);
-  const templatePath = path.join(path.resolve(__dirname, "../../"), template[framework]);
+  const templatePath = path.join(
+    path.resolve(__dirname, "../../"),
+    template[framework]
+  );
   await fs.copy(templatePath, targetDir);
   process.chdir(targetDir);
-  console.log(`Project '${projectName}' created successfully.`);
+  // Update project name in package.json
+  const packageJsonFilePath = path.join(targetDir, "package.json")
+  const data = fs.readFileSync(packageJsonFilePath, "utf8");
+  const packageJson = JSON.parse(data);
+  packageJson.name = projectName
+  fs.writeFileSync(packageJsonFilePath, JSON.stringify(packageJson, null,2), 'utf-8');
+
+  //Remove folder template components
+  const componentTemplatePath = path.join(targetDir, "components/example");
+  fs.removeSync(componentTemplatePath);
+
+  console.log(chalk.green(`Project '${projectName}' created successfully.`));
 }
 
 module.exports = (...args) => {
