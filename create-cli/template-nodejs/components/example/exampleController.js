@@ -57,9 +57,26 @@ const del = async (req, res, next) => {
   }
 }
 
+const get = async (req, res, next) => {
+  try {
+    let id = req.params.id
+    if (!id) {
+      throw new BadRequest('Param invalid')
+    }
+    id = Number(id)
+    const res = await {name}Service.get({
+      id,
+    })
+    return res.send(res)
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports = {
   list,
   create,
   update,
-  del
+  del,
+  get
 }
