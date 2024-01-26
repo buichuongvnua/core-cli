@@ -3,6 +3,8 @@ const path = require("path");
 const inquirer = require("inquirer");
 const validateProjectName = require("validate-npm-package-name");
 const chalk = require("chalk");
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
 
 async function create(projectName, options) {
   if (options.proxy) {
@@ -73,17 +75,29 @@ async function create(projectName, options) {
   await fs.copy(templatePath, targetDir);
   process.chdir(targetDir);
   // Update project name in package.json
-  const packageJsonFilePath = path.join(targetDir, "package.json")
+  const packageJsonFilePath = path.join(targetDir, "package.json");
   const data = fs.readFileSync(packageJsonFilePath, "utf8");
   const packageJson = JSON.parse(data);
-  packageJson.name = projectName
-  fs.writeFileSync(packageJsonFilePath, JSON.stringify(packageJson, null,2), 'utf-8');
+  packageJson.name = projectName;
+  fs.writeFileSync(
+    packageJsonFilePath,
+    JSON.stringify(packageJson, null, 2),
+    "utf-8"
+  );
 
   //Remove folder template components
   const componentTemplatePath = path.join(targetDir, "components/example");
   fs.removeSync(componentTemplatePath);
-
   console.log(chalk.green(`Project '${projectName}' created successfully.`));
+  console.log(`Running install package...`);
+  try {
+    await exec(`cd ${targetDir} && npm install`);
+    console.log(
+      chalk.green(`Npm modules installed successfully in ${projectName}`)
+    );
+  } catch (error) {
+    console.error(`Error installing npm modules: ${error}`);
+  }
 }
 
 module.exports = (...args) => {
