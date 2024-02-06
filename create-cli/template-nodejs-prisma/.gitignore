@@ -1,0 +1,10 @@
+node_modules
+files
+.nyc_output
+log
+dev.pgsql
+coverage
+.DS_Store
+logs
+.serverless
+.env

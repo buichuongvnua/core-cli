@@ -1,0 +1,943 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model app_otp_token {
+  id                     Int       @id @default(autoincrement())
+  token                  String?   @db.VarChar(64)
+  expired_timestamp      DateTime  @default(now()) @db.Timestamp(0)
+  created_timestamp      DateTime  @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  is_verified            Boolean?  @default(false)
+  is_deleted             Boolean?  @default(false)
+  user_id                Int?
+
+  @@index([token, is_deleted], map: "token")
+}
+
+model block {
+  id                     Int          @id @default(autoincrement())
+  code                   String       @db.VarChar(64)
+  name                   String       @db.VarChar(255)
+  organization_id        Int
+  description            String?      @db.VarChar(512)
+  is_deleted             Boolean?     @default(false)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  created_timestamp      DateTime?    @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?    @default(now()) @db.Timestamp(0)
+  is_iig                 Boolean?     @default(false)
+  organization           organization @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_organization_block_1")
+  classes                classes[]
+
+  @@unique([code, organization_id, is_deleted], map: "code_organization_id_UNIQUE")
+  @@index([organization_id], map: "fk_organization_block_1")
+}
+
+model cards {
+  id                     Int       @id @default(autoincrement())
+  card                   String    @unique(map: "card_UNIQUE") @db.VarChar(100)
+  number                 Int
+  tag                    String?   @db.VarChar(45)
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int       @default(0)
+  last_updated_user_id   Int?
+  active                 Int?      @default(0) @db.TinyInt
+  course_id              Int
+  organization_id        Int
+  status                 String?   @db.VarChar(45)
+  course_ids             String?   @db.VarChar(255)
+  is_trial               Boolean   @default(false)
+  trial_lesson_ids       String    @default("[]") @db.VarChar(255)
+  has_guide              Boolean?  @default(true)
+  has_template           Boolean?  @default(true)
+  is_reused              Boolean?  @default(false)
+}
+
+model chapter {
+  id                     Int       @id @default(autoincrement())
+  code                   String    @unique(map: "CODE_UNIQUE") @db.VarChar(64)
+  name                   String    @db.VarChar(255)
+  description            String?   @db.VarChar(512)
+  is_deleted             Boolean?  @default(false)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  course_id              Int
+}
+
+model classes {
+  id                      Int                       @id @default(autoincrement())
+  code                    String                    @db.VarChar(64)
+  name                    String                    @db.VarChar(255)
+  block_id                Int
+  description             String?                   @db.VarChar(512)
+  head_teacher_id         Int?
+  head_teacher_name       String?                   @db.VarChar(127)
+  number_student          Int?
+  is_deleted              Boolean?                  @default(false)
+  creation_user_id        Int
+  last_updated_user_id    Int?
+  created_timestamp       DateTime?                 @default(now()) @db.Timestamp(0)
+  last_updated_timestamp  DateTime?                 @default(now()) @db.Timestamp(0)
+  is_iig                  Boolean?                  @default(false)
+  block                   block                     @relation(fields: [block_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_block_classes_1")
+  classes_course_granting classes_course_granting[]
+  user_classes            user_classes[]
+
+  @@unique([code, block_id, is_deleted], map: "code_block_id_UNIQUE")
+  @@index([block_id], map: "fk_block_classes_1")
+}
+
+model classes_course_granting {
+  id                         Int       @id @default(autoincrement())
+  granting_id                Int
+  classes_id                 Int
+  name                       String    @db.VarChar(127)
+  order_index                Int
+  created_timestamp          DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp     DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id           Int
+  last_updated_user_id       Int?
+  is_deleted                 Boolean?  @default(false)
+  last_activated_timestamp   DateTime? @db.Timestamp(0)
+  last_deactivated_timestamp DateTime? @db.Timestamp(0)
+  classes                    classes   @relation(fields: [classes_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_classes_course_granting_2")
+
+  @@unique([classes_id, granting_id, is_deleted], map: "classes_user_UNIQUE")
+  @@index([granting_id], map: "fk_classes_course_granting_1")
+  @@index([classes_id], map: "fk_granting_classes_idx")
+}
+
+model configurations {
+  id                     Int       @id @default(autoincrement())
+  name                   String    @unique(map: "name") @db.VarChar(64)
+  payload                String    @db.Text
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  is_deleted             Boolean?  @default(false)
+}
+
+model course {
+  id                            Int                             @id @default(autoincrement())
+  code                          String                          @unique(map: "CODE_UNIQUE") @db.VarChar(64)
+  name                          String                          @db.VarChar(127)
+  description                   String?                         @db.VarChar(255)
+  impact_object                 String?                         @db.VarChar(64)
+  is_deleted                    Boolean?                        @default(false)
+  creation_user_id              Int
+  last_updated_user_id          Int?
+  created_timestamp             DateTime?                       @default(now()) @db.Timestamp(0)
+  last_updated_timestamp        DateTime?                       @default(now()) @db.Timestamp(0)
+  course_url                    String?                         @db.VarChar(255)
+  landing_page_url              String?                         @db.VarChar(255)
+  course_avatar                 String                          @db.VarChar(255)
+  is_publish                    Boolean?                        @default(false)
+  scorm_id                      String?                         @db.VarChar(127)
+  modification_user_id          Int?
+  number_video                  Int?
+  number_test                   Int?
+  number_lesson                 Int?
+  course_events_live_class      course_events_live_class[]
+  course_organization_scheduler course_organization_scheduler[]
+  course_progress               course_progress[]
+  course_rating                 course_rating[]
+  exam_question_store           exam_question_store[]
+  exams_period_session          exams_period_session[]
+  games                         games[]
+  lesson                        lesson[]
+  media_library                 media_library[]
+  organization_course_granting  organization_course_granting[]
+  user_course_history           user_course_history[]
+  users_courses                 users_courses[]
+}
+
+model course_events_live_class {
+  id                          Int                           @id @default(autoincrement())
+  course_id                   Int
+  name                        String                        @db.VarChar(255)
+  link                        String                        @db.VarChar(127)
+  content                     String                        @db.Text
+  tags                        String                        @db.VarChar(127)
+  state                       Int
+  scheduled_timestamp         DateTime?                     @default(now()) @db.Timestamp(0)
+  created_timestamp           DateTime?                     @default(now()) @db.Timestamp(0)
+  last_updated_timestamp      DateTime?                     @default(now()) @db.Timestamp(0)
+  creation_user_id            Int
+  last_updated_user_id        Int?
+  is_deleted                  Boolean?                      @default(false)
+  course                      course                        @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_events_live_class_1")
+  course_events_users_history course_events_users_history[]
+
+  @@index([course_id, is_deleted], map: "fk_course_events_live_class_idx")
+}
+
+model course_events_users_history {
+  id                       Int                      @id @default(autoincrement())
+  user_id                  Int
+  event_id                 Int
+  score                    Int
+  state                    Int
+  created_timestamp        DateTime?                @default(now()) @db.Timestamp(0)
+  last_updated_timestamp   DateTime?                @default(now()) @db.Timestamp(0)
+  creation_user_id         Int
+  last_updated_user_id     Int?
+  is_deleted               Boolean?                 @default(false)
+  users                    users                    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_events_users_history_1")
+  course_events_live_class course_events_live_class @relation(fields: [event_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_events_users_history_2")
+
+  @@unique([user_id, event_id, is_deleted], map: "fk_course_events_users_history_idx")
+  @@index([event_id], map: "fk_course_events_users_history_2")
+}
+
+model course_organization_scheduler {
+  id                     Int          @id @default(autoincrement())
+  organization_id        Int
+  course_id              Int
+  event_status           Int
+  event_name             String       @db.VarChar(127)
+  event_description      String       @db.VarChar(255)
+  scheduled_timestamp    DateTime     @default(now()) @db.Timestamp(0)
+  created_timestamp      DateTime?    @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?    @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?     @default(false)
+  course_name            String?      @db.VarChar(127)
+  classes_id             Int?
+  classes_name           String?      @db.VarChar(127)
+  teacher_user_id        Int?
+  teacher_user_name      String?      @db.VarChar(127)
+  organization_name      String?      @db.VarChar(127)
+  block_id               Int?
+  block_name             String?      @db.VarChar(127)
+  organization           organization @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_organization_scheduler_1")
+  course                 course       @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_organization_scheduler_2")
+
+  @@unique([organization_id, course_id, is_deleted], map: "course_organization_scheduler_UNIQUE")
+  @@index([course_id], map: "fk_course_organization_scheduler_2")
+  @@index([organization_id], map: "fk_course_organization_scheduler_idx")
+}
+
+model course_progress {
+  id                     Int          @id @default(autoincrement())
+  organization_id        Int
+  course_id              Int
+  order_index            Int
+  description            String       @db.VarChar(255)
+  created_timestamp      DateTime?    @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?    @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?     @default(false)
+  organization           organization @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_progress_1")
+  course                 course       @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_progress_2")
+
+  @@unique([organization_id, course_id, is_deleted], map: "course_progress_UNIQUE")
+  @@index([course_id], map: "fk_course_progress_2")
+  @@index([organization_id], map: "fk_course_progress_idx")
+}
+
+model course_rating {
+  id                     Int       @id @default(autoincrement())
+  course_id              Int
+  user_id                Int
+  rating                 Int
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?  @default(false)
+  course                 course    @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_rating_1")
+  users                  users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_course_rating_2")
+
+  @@unique([user_id, course_id, is_deleted], map: "fk_course_rating_idx")
+  @@index([course_id], map: "fk_course_rating_1")
+}
+
+model course_user_history {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int
+  course_id              Int
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_done                Boolean?  @default(false)
+  num_lesson_done        Int?      @default(0)
+  last_lesson_id         Int?
+  last_lesson_time       DateTime? @db.Timestamp(0)
+
+  @@unique([user_id, course_id], map: "uiq")
+}
+
+model domain {
+  id                     Int                   @id @default(autoincrement())
+  url                    String?               @db.VarChar(255)
+  description            String?               @db.VarChar(512)
+  is_deleted             Boolean?              @default(false)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  created_timestamp      DateTime?             @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?             @default(now()) @db.Timestamp(0)
+  code                   String?               @db.VarChar(127)
+  name                   String?               @db.VarChar(45)
+  organization_domain    organization_domain[]
+}
+
+model exam_question_store {
+  id                     Int                   @id @default(autoincrement())
+  course_id              Int
+  name                   String                @db.VarChar(255)
+  section                String                @db.VarChar(127)
+  content                String                @db.MediumText
+  order_index            Int
+  state                  Int
+  created_timestamp      DateTime?             @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?             @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?              @default(false)
+  game_theme             String?               @db.VarChar(64)
+  section_id             Int?
+  level                  Boolean?
+  scorm_id               String?               @db.VarChar(127)
+  source                 String?               @db.VarChar(20)
+  point                  Int?
+  hashing                String                @db.VarChar(255)
+  organization_id        Int?
+  block_id               Int?
+  class_id               Int?
+  modification_user_id   Int?
+  course                 course                @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_exam_question_store_1")
+  exams_period_detail    exams_period_detail[]
+
+  @@index([course_id], map: "fk_exam_question_store_idx")
+  @@index([hashing], map: "hashing_INDEX")
+}
+
+model exams_period_detail {
+  id                     Int                 @id @default(autoincrement())
+  session_id             Int
+  question_id            Int
+  created_timestamp      DateTime?           @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?           @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?            @default(false)
+  questions              String?             @db.Text
+  exam_question_store    exam_question_store @relation(fields: [question_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_exams_period_detail_2")
+
+  @@index([question_id], map: "fk_exams_period_detail_2")
+  @@index([session_id], map: "fk_exams_period_detail_idx")
+}
+
+model exams_period_session {
+  id                                       Int                                        @id @default(autoincrement())
+  course_id                                Int
+  course_ids                               String?                                    @db.Text
+  event_name                               String                                     @db.VarChar(127)
+  event_description                        String                                     @db.VarChar(255)
+  scheduled_timestamp                      DateTime                                   @default(now()) @db.Timestamp(0)
+  created_timestamp                        DateTime?                                  @default(now()) @db.Timestamp(0)
+  last_updated_timestamp                   DateTime?                                  @default(now()) @db.Timestamp(0)
+  creation_user_id                         Int
+  last_updated_user_id                     Int?
+  is_deleted                               Boolean?                                   @default(false)
+  end_timestamp                            DateTime?                                  @db.Timestamp(0)
+  begin_timestamp                          DateTime?                                  @db.Timestamp(0)
+  number_minute                            Int?
+  organization_id                          Int?
+  lesson_id                                Int?
+  number_repeat                            Int?
+  questions                                String?                                    @db.Text
+  session_id_ref                           Int?
+  organization_id_ref                      Int?
+  block_id                                 Int?
+  block_id_ref                             Int?
+  course                                   course                                     @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_exams_period_session_2")
+  exams_period_session_user_detail_history exams_period_session_user_detail_history[]
+  exams_period_session_user_history        exams_period_session_user_history[]
+
+  @@index([course_id], map: "fk_exams_period_session_idx")
+  @@index([block_id, session_id_ref], map: "index_block_id")
+  @@index([organization_id, session_id_ref], map: "index_organization_id")
+}
+
+model exams_period_session_user_detail_history {
+  id                     Int                  @id @default(autoincrement())
+  history_id             Int                  @default(0)
+  question_id            Int
+  session_id             Int
+  user_id                Int
+  score                  Int
+  created_timestamp      DateTime?            @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?            @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?             @default(false)
+  end_timestamp          DateTime?            @db.Timestamp(0)
+  begin_timestamp        DateTime?            @db.Timestamp(0)
+  number_minute          Int?
+  course_id              Int?
+  lesson_id              Int?
+  session_history_id     Int?
+  questions              String?              @db.Text
+  block_id               Int?
+  class_id               Int?
+  users                  users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_exams_period_detail_history_1")
+  exams_period_session   exams_period_session @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_exams_period_detail_history_2")
+
+  @@index([session_id], map: "fk_user_exams_period_detail_history_2")
+  @@index([question_id], map: "fk_user_exams_period_detail_history_3")
+  @@index([user_id], map: "fk_user_exams_period_detail_history_idx")
+  @@index([user_id, session_id, question_id, history_id, is_deleted], map: "history_idx")
+  @@index([block_id, user_id], map: "index_block_id")
+  @@index([block_id, user_id], map: "index_class_id")
+}
+
+model exams_period_session_user_history {
+  id                     Int                  @id @default(autoincrement())
+  session_id             Int
+  user_id                Int
+  is_done                Boolean?             @default(false)
+  score                  Int
+  created_timestamp      DateTime?            @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?            @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?             @default(false)
+  end_timestamp          DateTime?            @db.Timestamp(0)
+  begin_timestamp        DateTime?            @db.Timestamp(0)
+  number_minute          Int?
+  organization_id        Int
+  course_id              Int?
+  lesson_id              Int?
+  is_exam                Boolean?             @default(false)
+  questions              String?              @db.Text
+  block_id               Int?
+  class_id               Int?
+  users                  users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_exams_period_session_user_history_1")
+  exams_period_session   exams_period_session @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_exams_period_session_user_history_2")
+
+  @@index([session_id], map: "fk_exams_period_session_user_history_2")
+  @@index([user_id], map: "fk_exams_period_session_user_history_idx")
+  @@index([block_id, user_id], map: "index_block_id")
+  @@index([class_id, user_id], map: "index_class_id")
+  @@index([session_id, user_id, is_deleted], map: "session_idx")
+}
+
+model games {
+  id                     Int                   @id @default(autoincrement())
+  course_id              Int
+  name                   String                @db.VarChar(255)
+  link                   String                @db.VarChar(127)
+  content                Bytes?                @db.Blob
+  tags                   String                @db.VarChar(127)
+  state                  Int
+  created_timestamp      DateTime?             @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?             @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?              @default(false)
+  course                 course                @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_games_1")
+  games_users_history    games_users_history[]
+
+  @@index([course_id, is_deleted], map: "fk_games_idx")
+}
+
+model games_users_history {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int
+  game_id                Int
+  score                  Int
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?  @default(false)
+  users                  users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_games_users_history_1")
+  games                  games     @relation(fields: [game_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_games_users_history_2")
+
+  @@unique([user_id, game_id, is_deleted], map: "fk_games_users_history_idx")
+  @@index([game_id], map: "fk_games_users_history_2")
+}
+
+model lesson {
+  id                      Int                       @id @default(autoincrement())
+  course_id               Int
+  name                    String                    @db.VarChar(255)
+  section                 String                    @db.VarChar(127)
+  content                 String                    @db.Text
+  order_index             Int
+  state                   Int
+  created_timestamp       DateTime?                 @default(now()) @db.Timestamp(0)
+  last_updated_timestamp  DateTime?                 @default(now()) @db.Timestamp(0)
+  creation_user_id        Int
+  last_updated_user_id    Int?
+  is_deleted              Boolean?                  @default(false)
+  order_section_index     Int?
+  is_publish              Boolean?                  @default(false)
+  lesson_url              String?                   @db.VarChar(512)
+  scorm_id                String?                   @db.VarChar(127)
+  section_id              Int?
+  is_next                 Boolean?                  @default(false)
+  modification_user_id    Int?
+  description             String?                   @db.Text
+  course                  course                    @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lesson_course_1")
+  lesson_chatting         lesson_chatting[]
+  lesson_learning_history lesson_learning_history[]
+
+  @@index([course_id], map: "fk_lesson_idx")
+}
+
+model lesson_chatting {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int
+  lesson_id              Int
+  rating                 Int       @default(0)
+  message_parent_id      Int       @default(-1)
+  message                String    @db.VarChar(255)
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?  @default(false)
+  users                  users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lesson_chatting_1")
+  lesson                 lesson    @relation(fields: [lesson_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lesson_chatting_2")
+
+  @@index([user_id], map: "fk_lesson_chatting_idx_01")
+  @@index([lesson_id], map: "fk_lesson_chatting_idx_02")
+}
+
+model lesson_learning_history {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int
+  lesson_id              Int
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?  @default(false)
+  lesson_result          String?   @db.Text
+  lesson_complete        Int?
+  video_state            String?   @db.Text
+  users                  users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lesson_learning_history_1")
+  lesson                 lesson    @relation(fields: [lesson_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_lesson_learning_history_2")
+
+  @@unique([user_id, lesson_id, is_deleted], map: "lesson_learning_history_UNIQUE")
+  @@index([lesson_id], map: "fk_lesson_learning_history_2")
+  @@index([user_id], map: "fk_lesson_learning_history_idx")
+}
+
+model lesson_question {
+  id                     Int       @id @default(autoincrement())
+  lesson_id              Int
+  lesson_name            String    @db.VarChar(255)
+  question_id            Int
+  question_name          String    @db.VarChar(255)
+  is_deleted             Boolean?  @default(false)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model media_library {
+  id                     Int       @id @default(autoincrement())
+  course_id              Int
+  name                   String    @db.VarChar(255)
+  link                   String    @db.VarChar(127)
+  content                Bytes?    @db.Blob
+  tags                   String    @db.VarChar(127)
+  media_type             String    @db.VarChar(127)
+  state                  Int
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?  @default(false)
+  course                 course    @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_media_library_1")
+
+  @@index([course_id, is_deleted], map: "fk_media_library_idx")
+}
+
+model notification_device {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int?
+  player_id              String    @db.VarChar(127)
+  device_id              String    @db.VarChar(127)
+  platform               String?   @db.VarChar(32)
+  os_version             String?   @db.VarChar(64)
+  app_version            String?   @db.VarChar(64)
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_active              Boolean?  @default(false)
+  is_deleted             Boolean?  @default(false)
+
+  @@index([user_id, is_active, is_deleted], map: "fk_notification_device_idx_01")
+  @@index([player_id, is_active, is_deleted], map: "fk_notification_device_idx_02")
+  @@index([device_id, is_active, is_deleted], map: "fk_notification_device_idx_03")
+}
+
+model notification_message {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int?
+  title                  String    @db.VarChar(127)
+  content                String    @db.Text
+  message_type           Int
+  state                  Int
+  scheduled_timestamp    DateTime? @db.Timestamp(0)
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?  @default(false)
+
+  @@index([user_id, is_deleted], map: "fk_notification_message_idx")
+}
+
+model organization {
+  id                            Int                             @id @default(autoincrement())
+  code                          String                          @unique(map: "CODE_UNIQUE") @db.VarChar(64)
+  name                          String                          @db.VarChar(255)
+  description                   String?                         @db.VarChar(512)
+  email                         String?                         @db.VarChar(100)
+  mobile                        String?                         @db.VarChar(20)
+  province_code                 String?                         @db.VarChar(20)
+  district_code                 String?                         @db.VarChar(20)
+  commune_code                  String?                         @db.VarChar(20)
+  address_detail                String?                         @db.VarChar(255)
+  is_deleted                    Boolean?                        @default(false)
+  creation_user_id              Int
+  last_updated_user_id          Int?
+  created_timestamp             DateTime?                       @default(now()) @db.Timestamp(0)
+  last_updated_timestamp        DateTime?                       @default(now()) @db.Timestamp(0)
+  sub_domain                    String?                         @db.VarChar(127)
+  organization_type             String?                         @db.VarChar(32)
+  organization_admin_id         Int?
+  organization_admin_name       String?                         @db.VarChar(100)
+  is_iig                        Boolean?                        @default(false)
+  modification_user_id          Int?
+  max_member                    Int?                            @default(1)
+  status                        Int?                            @default(1)
+  last_activated_timestamp      DateTime?                       @db.Timestamp(0)
+  last_deactivated_timestamp    DateTime?                       @db.Timestamp(0)
+  number_member                 Int?                            @default(0)
+  block                         block[]
+  course_organization_scheduler course_organization_scheduler[]
+  course_progress               course_progress[]
+  organization_course_granting  organization_course_granting[]
+  organization_domain           organization_domain[]
+}
+
+model organization_admin {
+  id                     Int       @id @default(autoincrement())
+  organization_id        Int
+  user_id                Int
+  creation_user_id       Int?
+  is_deleted             Boolean?  @default(false)
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  modification_user_id   Int?
+
+  @@unique([organization_id, user_id], map: "unique")
+}
+
+model organization_course_granting {
+  id                         Int          @id @default(autoincrement())
+  organization_id            Int
+  course_id                  Int
+  granting_name              String?      @db.VarChar(127)
+  creation_user_id           Int
+  last_updated_user_id       Int?
+  created_timestamp          DateTime?    @default(now()) @db.Timestamp(0)
+  last_updated_timestamp     DateTime?    @default(now()) @db.Timestamp(0)
+  is_deleted                 Boolean?     @default(false)
+  last_activated_timestamp   DateTime?    @db.Timestamp(0)
+  last_deactivated_timestamp DateTime?    @db.Timestamp(0)
+  organization               organization @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_organization_course_granting_1")
+  course                     course       @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_organization_course_granting_2")
+
+  @@unique([organization_id, course_id, is_deleted], map: "organization_course_granting_UNIQUE")
+  @@index([course_id], map: "fk_organization_course_granting_2_idx")
+}
+
+model organization_domain {
+  id                     Int          @id @default(autoincrement())
+  organization_id        Int
+  domain_id              Int
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  created_timestamp      DateTime?    @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?    @default(now()) @db.Timestamp(0)
+  is_deleted             Boolean?     @default(false)
+  organization           organization @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_organization_domain_1")
+  domain                 domain       @relation(fields: [domain_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_organization_domain_2")
+
+  @@unique([organization_id, domain_id, is_deleted], map: "organization_domain_UNIQUE")
+  @@index([domain_id], map: "fk_organization_domain_2_idx")
+}
+
+model organization_staff {
+  id                     Int       @id @default(autoincrement())
+  organization_id        Int
+  user_id                Int
+  role                   Int?
+  description            String?   @db.Text
+  creation_user_id       Int?
+  is_deleted             Boolean?  @default(false)
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  modification_user_id   Int?
+
+  @@unique([organization_id, user_id], map: "unique")
+}
+
+model perms {
+  id                     Int           @id @default(autoincrement())
+  feature                String        @db.VarChar(127)
+  code                   String        @db.VarChar(127)
+  description            String        @db.VarChar(255)
+  created_timestamp      DateTime?     @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?     @default(now()) @db.Timestamp(0)
+  is_writing             Boolean?      @default(false)
+  is_reading             Boolean?      @default(false)
+  is_deleting            Boolean?      @default(false)
+  is_reporting           Boolean?      @default(false)
+  roles_perms            roles_perms[]
+
+  @@unique([feature, code], map: "feature_code_UNIQUE")
+}
+
+model role_group_dictionary {
+  id                     Int               @id @default(autoincrement())
+  name                   String?           @unique(map: "unique_name") @db.VarChar(64)
+  short_name             String?           @unique(map: "unique_short_name") @db.VarChar(20)
+  description            String?           @db.VarChar(255)
+  read_role_id           Int?
+  write_role_id          Int?
+  create_role_id         Int?
+  delete_role_id         Int?
+  report_role_id         Int?
+  is_deleted             Boolean?          @default(false)
+  creation_user_id       Int               @default(0)
+  last_updated_user_id   Int?
+  created_timestamp      DateTime?         @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?         @default(now()) @db.Timestamp(0)
+  order_index            Int               @default(0)
+  role_group_user        role_group_user[]
+}
+
+model role_group_user {
+  id                     Int                   @id @default(autoincrement())
+  user_id                Int
+  group_id               Int
+  read_role_id           Int                   @default(0)
+  write_role_id          Int                   @default(0)
+  create_role_id         Int                   @default(0)
+  delete_role_id         Int                   @default(0)
+  report_role_id         Int                   @default(0)
+  is_deleted             Boolean?              @default(false)
+  creation_user_id       Int                   @default(0)
+  last_updated_user_id   Int?
+  created_timestamp      DateTime?             @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?             @default(now()) @db.Timestamp(0)
+  users                  users                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_group_user_1")
+  role_group_dictionary  role_group_dictionary @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_group_user_2")
+
+  @@unique([user_id, group_id], map: "unique_name")
+  @@index([group_id], map: "fk_role_group_user_2")
+}
+
+model roles {
+  id                     Int           @id @default(autoincrement())
+  name                   String        @unique(map: "name_UNIQUE") @db.VarChar(127)
+  created_timestamp      DateTime?     @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime?     @default(now()) @db.Timestamp(0)
+  is_super_admin         Boolean?      @default(false)
+  is_active              Boolean?      @default(false)
+  is_deleted             Boolean?      @default(false)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  roles_perms            roles_perms[]
+  users_roles            users_roles[]
+}
+
+model roles_perms {
+  id                     Int       @id @default(autoincrement())
+  role_id                Int
+  perm_id                Int
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  is_deleted             Boolean?  @default(false)
+  perms                  perms     @relation(fields: [perm_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_perms_roles_1")
+  roles                  roles     @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_perms_roles_2")
+
+  @@unique([perm_id, role_id, is_deleted], map: "perms_roles_UNIQUE")
+  @@index([role_id], map: "fk_perms_roles_2_idx")
+}
+
+model shedlock {
+  name       String    @id @db.VarChar(64)
+  lock_until DateTime? @db.Timestamp(3)
+  locked_at  DateTime? @db.Timestamp(3)
+  locked_by  String?   @db.VarChar(255)
+}
+
+model user_classes {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int
+  classes_id             Int
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?  @default(false)
+  users                  users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_classes_1")
+  classes                classes   @relation(fields: [classes_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_classes_2")
+
+  @@unique([user_id, classes_id, is_deleted], map: "classes_user_UNIQUE")
+  @@index([classes_id], map: "fk_classes_idx")
+}
+
+model user_course_history {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int
+  course_id              Int
+  state                  Int
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?  @default(false)
+  users                  users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_course_history_1")
+  course                 course    @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_course_history_2")
+
+  @@unique([user_id, course_id, is_deleted], map: "user_course_history_UNIQUE")
+  @@index([course_id], map: "fk_user_course_history_2")
+  @@index([user_id], map: "fk_user_course_history_idx")
+}
+
+model users {
+  id                                       Int                                        @id @default(autoincrement())
+  user_name                                String                                     @unique(map: "user_name_UNIQUE") @db.VarChar(64)
+  password                                 String                                     @db.VarChar(255)
+  full_name                                String                                     @db.VarChar(45)
+  email                                    String?                                    @unique(map: "email_unique") @db.VarChar(100)
+  mobile                                   String?                                    @db.VarChar(20)
+  address                                  String?                                    @db.VarChar(255)
+  age                                      Int?                                       @db.SmallInt
+  sex                                      Int?                                       @db.SmallInt
+  bod                                      DateTime?                                  @db.DateTime(0)
+  job_title                                String?                                    @db.VarChar(1024)
+  created_timestamp                        DateTime?                                  @default(now()) @db.Timestamp(0)
+  last_updated_timestamp                   DateTime?                                  @default(now()) @db.Timestamp(0)
+  is_deleted                               Boolean?                                   @default(false)
+  creation_user_id                         Int
+  last_updated_user_id                     Int?
+  is_suspended                             Boolean?                                   @default(false)
+  suspended_reason                         String?                                    @db.VarChar(255)
+  is_api_doc                               Boolean?                                   @default(false)
+  avatar                                   String?                                    @db.VarChar(255)
+  is_reset_password                        Boolean?                                   @default(false)
+  user_type                                String?                                    @db.VarChar(64)
+  classes_id                               Int?
+  department_id                            Int?
+  organization_id                          Int?
+  user_type_id                             Int                                        @default(0)
+  province                                 String?                                    @db.VarChar(80)
+  district                                 String?                                    @db.VarChar(80)
+  ward                                     String?                                    @db.VarChar(80)
+  modification_user_id                     Int?
+  course_events_users_history              course_events_users_history[]
+  course_rating                            course_rating[]
+  exams_period_session_user_detail_history exams_period_session_user_detail_history[]
+  exams_period_session_user_history        exams_period_session_user_history[]
+  games_users_history                      games_users_history[]
+  lesson_chatting                          lesson_chatting[]
+  lesson_learning_history                  lesson_learning_history[]
+  role_group_user                          role_group_user[]
+  user_classes                             user_classes[]
+  user_course_history                      user_course_history[]
+  users_courses                            users_courses[]
+  users_roles                              users_roles[]
+}
+
+model users_courses {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int
+  course_id              Int
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  is_deleted             Boolean?  @default(false)
+  is_trial               Boolean?  @default(false)
+  card_id                Int?
+  begin_timestamp        DateTime? @db.Timestamp(0)
+  end_timestamp          DateTime? @db.Timestamp(0)
+  number_day             Int?
+  users                  users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_courses_1")
+  course                 course    @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_courses_2")
+
+  @@unique([user_id, course_id, is_deleted], map: "users_courses_UNIQUE")
+  @@index([course_id], map: "fk_users_courses_2")
+  @@index([user_id], map: "fk_users_courses_idx")
+}
+
+model users_roles {
+  id                     Int       @id @default(autoincrement())
+  user_id                Int
+  role_id                Int
+  creation_user_id       Int
+  last_updated_user_id   Int?
+  created_timestamp      DateTime? @default(now()) @db.Timestamp(0)
+  last_updated_timestamp DateTime? @default(now()) @db.Timestamp(0)
+  is_deleted             Boolean?  @default(false)
+  users                  users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles_1")
+  roles                  roles     @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles_2")
+
+  @@unique([user_id, role_id, is_deleted], map: "users_roles_UNIQUE")
+  @@index([role_id], map: "fk_users_roles_2_idx")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model DATABASECHANGELOG {
+  ID            String   @db.VarChar(255)
+  AUTHOR        String   @db.VarChar(255)
+  FILENAME      String   @db.VarChar(255)
+  DATEEXECUTED  DateTime @db.DateTime(0)
+  ORDEREXECUTED Int
+  EXECTYPE      String   @db.VarChar(10)
+  MD5SUM        String?  @db.VarChar(35)
+  DESCRIPTION   String?  @db.VarChar(255)
+  COMMENTS      String?  @db.VarChar(255)
+  TAG           String?  @db.VarChar(255)
+  LIQUIBASE     String?  @db.VarChar(20)
+  CONTEXTS      String?  @db.VarChar(255)
+  LABELS        String?  @db.VarChar(255)
+  DEPLOYMENT_ID String?  @db.VarChar(10)
+
+  @@ignore
+}
+
+model DATABASECHANGELOGLOCK {
+  ID          Int       @id
+  LOCKED      Boolean   @db.Bit(1)
+  LOCKGRANTED DateTime? @db.DateTime(0)
+  LOCKEDBY    String?   @db.VarChar(255)
+}

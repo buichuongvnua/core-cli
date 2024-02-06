@@ -1,0 +1,13 @@
+{
+  "files.autoSave": "afterDelay",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "cSpell.words": ["Hanh", "Millis", "playdeveloper", "realestate"]
+}
